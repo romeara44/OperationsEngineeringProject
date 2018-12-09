@@ -93,7 +93,6 @@ class PolicyAccounting(object):
         else:
             print "THIS POLICY SHOULD NOT CANCEL"
 
-
     def make_invoices(self):
         for invoice in self.policy.invoices:
             invoice.delete()
@@ -183,6 +182,7 @@ def insert_data():
     policies = []
     p1 = Policy('Policy One', date(2015, 1, 1), 365)
     p1.billing_schedule = 'Annual'
+    p1.named_insured = john_doe_insured.id
     p1.agent = bob_smith.id
     policies.append(p1)
 
@@ -198,7 +198,7 @@ def insert_data():
     p3.agent = john_doe_agent.id
     policies.append(p3)
 
-    p4 = Policy('Policy Three', date(2015, 2, 1), 500)
+    p4 = Policy('Policy Four', date(2015, 2, 1), 500)
     p4.billing_schedule = 'Two-Pay'
     p4.named_insured = ryan_bucket.id
     p4.agent = john_doe_agent.id
