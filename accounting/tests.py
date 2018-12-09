@@ -134,3 +134,50 @@ class TestReturnAccountBalance(unittest.TestCase):
         self.payments.append(pa.make_payment(contact_id=self.policy.named_insured,
                                              date_cursor=invoices[1].bill_date, amount=200))
         self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
+
+
+class TestEvaluateCencellationPendingDueToNonPay(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.test_agent = Contact('Test Agent', 'Agent')
+        cls.test_insured = Contact('Test Insured', 'Named Insured')
+        db.session.add(cls.test_agent)
+        db.session.add(cls.test_insured)
+        db.session.commit()
+
+        cls.policy = Policy('Test Policy', date(2015, 2, 1), 1200)
+        cls.policy.named_insured = cls.test_insured.id
+        cls.policy.agent = cls.test_agent.id
+        cls.policy.billing_schedule = "Quarterly"
+        db.session.add(cls.policy)
+        db.session.commit()
+
+    @classmethod
+    def tearDownClass(cls):
+        db.session.delete(cls.test_insured)
+        db.session.delete(cls.test_agent)
+        db.session.delete(cls.policy)
+        db.session.commit()
+
+    def setUp(self):
+        self.payments = []
+
+    def tearDown(self):
+        for invoice in self.policy.invoices:
+            db.session.delete(invoice)
+        for payment in self.payments:
+            db.session.delete(payment)
+        db.session.commit()
+
+    def test_pending_cancellation_true(self):
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(pa.evaluate_cancellation_pending_due_to_non_pay(date_cursor=date(2015, 3, 8)), True)
+
+    def test_pending_cancellation_false(self):
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(pa.evaluate_cancellation_pending_due_to_non_pay(date_cursor=date(2015, 2, 8)), True)
+
+    def test_pending_cancellation_equal_due_date_true(self):
+        pa = PolicyAccounting(self.policy.id)
+        self.assertEquals(pa.evaluate_cancellation_pending_due_to_non_pay(date_cursor=date(2015, 3, 1)), True)
