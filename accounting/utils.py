@@ -6,6 +6,9 @@ from dateutil.relativedelta import relativedelta
 from accounting import db
 from models import Contact, Invoice, Payment, Policy
 
+from dateutil import rrule
+from datetime import date
+
 """
 #######################################################
 This is the base code for the engineer project.
@@ -166,6 +169,148 @@ class PolicyAccounting(object):
         for invoice in invoices:
             db.session.add(invoice)
         db.session.commit()
+
+    def change_billing_schedule(self, date_cursor=None, billing_schedule=''):
+        if billing_schedule == '':
+            return
+
+        if not date_cursor:
+            date_cursor = datetime.now().date()
+
+        # set the billing schedule
+        self.policy.billing_schedule = billing_schedule
+
+        # get all the payments
+        payments = Payment.query.filter_by(policy_id=self.policy.id)\
+            .all()
+
+        payment_amount = 9
+        for payment in payments:
+            payment_amount += payment.amount_paid
+
+        payment_date = payments[len(payments) - 1].transaction_date
+
+        invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+            .order_by(Invoice.bill_date)\
+            .all()
+
+        invoice_amount = 0
+
+        for i in range(len(payments), len(invoices)):
+            invoices[i].deleted = True
+            invoice_amount += invoices[i].amount_due
+
+        self.make_invoices_remainder(payment_date, invoice_amount)
+
+        db.session.commit()
+
+    def make_invoices_remainder(self, date_cursor=None, amount=0):
+        if not date_cursor:
+            date_cursor = datetime.now().date()
+
+        month_list = list(rrule.rrule(rrule.MONTHLY, dtstart=date_cursor, until=date(date_cursor.year, 12, 31)))
+
+        invoices = []
+
+        first_invdef change_billing_schedule(self, date_cursor=None, billing_schedule=''):
+        if billing_schedule == '':
+            return
+
+        if not date_cursor:
+            date_cursor = datetime.now().date()
+
+        # set the billing schedule
+        self.policy.billing_schedule = billing_schedule
+
+        # Get all the payments
+        payments = Payment.query.filter_by(policy_id=self.policy.id)\
+            .all()
+
+        payment_amount = 0
+        for payment in payments:
+            payment_amount += payment.amount_paid
+
+        payment_date = payments[len(payments) - 1].transaction_date
+
+        invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+            .order_by(Invoice.bill_date)\
+            .all()
+
+        invoice_amount = 0
+
+        for i in range(len(payments), len(invoices)):
+            invoices[i].deleted = True
+            invoice_amount += invoices[i].amount_due
+
+        self.make_invoices_remainder(payment_date, invoice_amount)
+
+        db.session.commit()
+
+    def make_invoices_remainder(self, date_cursor=None, amount=0):
+        if not date_cursor:
+            date_cursor = datetime.now().date()
+        from dateutil import rrule
+        from datetime import date
+
+        month_list = list(rrule.rrule(rrule.MONTHLY, dtstart=date_cursor, until=date(date_cursor.year, 12, 31)))
+
+        invoices = []
+        first_invoice = Invoice(self.policy.id,
+                                date_cursor,  # bill_date
+                                date_cursor + relativedelta(months=1),  # due_date
+                                date_cursor + relativedelta(months=1, days=14),  # cancel_date
+                                amount)
+        invoices.append(first_invoice)
+
+        if self.policy.billing_schedule == "Annual":
+            first_invoice.amount_due = amount
+        elif self.policy.billing_schedule == "Two-Pay":
+            first_invoice.amount_due = amount
+        elif self.policy.billing_schedule == "Quarterly":
+            quarters_left = 0
+            months_in_quarter = 0
+
+            if len(month_list) == 12:
+                quarters_left = 4
+                months_in_quarter = 3
+            elif len(month_list) >= 10:
+                quarters_left = 3
+                months_in_quarter = len(month_list) / quarters_left
+            elif len(month_list) >= 7:
+                quarters_left = 2
+                months_in_quarter = len(month_list) / quarters_left
+            else:
+                quarters_left = 1
+                months_in_quarter = 1
+
+            first_invoice.amount_due = first_invoice.amount_due / quarters_left
+            for i in range(1, len(month_list)):
+                months_after_eff_date = i * months_in_quarter
+                bill_date = date_cursor + relativedelta(months=months_after_eff_date)
+                invoice = Invoice(self.policy.id,
+                                  bill_date,
+                                  bill_date + relativedelta(months=1),
+                                  bill_date + relativedelta(months=1, days=14),
+                                  amount / len(month_list))
+                invoices.append(invoice)
+        elif self.policy.billing_schedule == "Monthly":
+            first_invoice.amount_due = first_invoice.amount_due / len(month_list)
+            for i in range(1, len(month_list)):
+                months_after_eff_date = i * 1
+                bill_date = date_cursor + relativedelta(months=months_after_eff_date)
+                invoice = Invoice(self.policy.id,
+                                  bill_date,
+                                  bill_date + relativedelta(months=1),
+                                  bill_date + relativedelta(months=1, days=14),
+                                  amount / len(month_list))
+                invoices.append(invoice)
+        else:
+            print "You have chosen a bad billing schedule."
+
+        for invoice in invoices:
+            db.session.add(invoice)
+        db.session.commit()
+
 
 ################################
 # The functions below are for the db and 
