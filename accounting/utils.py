@@ -131,7 +131,6 @@ class PolicyAccounting(object):
 
         db.session.commit()
 
-
     def make_invoices(self):
         for invoice in self.policy.invoices:
             invoice.delete()
@@ -202,7 +201,7 @@ class PolicyAccounting(object):
         self.policy.billing_schedule = billing_schedule
 
         # Get all the payments
-        payments = Payment.query.filter_by(policy_id=self.policy.id)\
+        payments = Payment.query.filter_by(policy_id=self.policy.id) \
             .all()
 
         payment_amount = 0
@@ -211,8 +210,8 @@ class PolicyAccounting(object):
 
         payment_date = payments[len(payments) - 1].transaction_date
 
-        invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
-            .order_by(Invoice.bill_date)\
+        invoices = Invoice.query.filter_by(policy_id=self.policy.id) \
+            .order_by(Invoice.bill_date) \
             .all()
 
         invoice_amount = 0

@@ -1,4 +1,5 @@
 from accounting import db
+# from __init__ import db
 # from sqlalchemy.ext.declarative import declarative_base
 # 
 # DeclarativeBase = declarative_base()
