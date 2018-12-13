@@ -6,9 +6,7 @@ from dateutil.relativedelta import relativedelta
 from accounting import db
 from models import Contact, Invoice, Payment, Policy
 
-from dateutil import rrule
-from datetime import date
-
+import logging
 """
 #######################################################
 This is the base code for the engineer project.
@@ -23,14 +21,15 @@ class PolicyAccounting(object):
     def __init__(self, policy_id):
         self.policy = Policy.query.filter_by(id=policy_id).one()
 
+        # If no invoices exist for current policy_id, call make_invoice
         if not self.policy.invoices:
             self.make_invoices()
+            # self.make_invoices(policy_id, self.policy.effective_date, self.policy.annual_premium)
 
     def return_account_balance(self, date_cursor=None):
         if not date_cursor:
             date_cursor = datetime.now().date()
 
-        # bill date of invoice is less than or equal to policy effective date
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
                                 .filter(Invoice.bill_date <= date_cursor)\
                                 .order_by(Invoice.bill_date)\
@@ -39,7 +38,6 @@ class PolicyAccounting(object):
         for invoice in invoices:
             due_now += invoice.amount_due
 
-        # transction date greater than or equal to policy effective date
         payments = Payment.query.filter_by(policy_id=self.policy.id)\
                                 .filter(Payment.transaction_date >= date_cursor)\
                                 .all()
@@ -52,7 +50,6 @@ class PolicyAccounting(object):
         if not date_cursor:
             date_cursor = datetime.now().date()
 
-        # if no contact_id is supplied use the policy insured name's id
         if not contact_id:
             try:
                 contact_id = self.policy.named_insured
@@ -75,6 +72,7 @@ class PolicyAccounting(object):
          being paid in full. However, it has not necessarily
          made it to the cancel_date yet.
         """
+
         if not date_cursor:
             date_cursor = datetime.now().date()
 
@@ -87,11 +85,11 @@ class PolicyAccounting(object):
             if not self.return_account_balance(invoice.cancel_date):
                 continue
             else:
-                print "THIS POLICY STATUS IS PENDING CANCELLED"
+                print "THIS POLICY STATUS IS PENDING CANCELED"
                 return True
                 break
         else:
-            print "THIS POLICY STATUS IS NOT PENDING CANCELLED"
+            print "THIS POLICY IS NOT PENDING CANCELED"
 
         return False
 
@@ -99,10 +97,10 @@ class PolicyAccounting(object):
         if not date_cursor:
             date_cursor = datetime.now().date()
 
-        invoices = Invoice.query.filter_by(policy_id=self.policy.id) \
-            .filter(Invoice.cancel_date <= date_cursor) \
-            .order_by(Invoice.bill_date) \
-            .all()
+        invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+                                .filter(Invoice.cancel_date <= date_cursor)\
+                                .order_by(Invoice.bill_date)\
+                                .all()
 
         for invoice in invoices:
             if not self.return_account_balance(invoice.cancel_date):
@@ -325,7 +323,6 @@ def insert_data():
     policies = []
     p1 = Policy('Policy One', date(2015, 1, 1), 365)
     p1.billing_schedule = 'Annual'
-    p1.named_insured = john_doe_insured.id
     p1.agent = bob_smith.id
     policies.append(p1)
 
@@ -341,6 +338,7 @@ def insert_data():
     p3.agent = john_doe_agent.id
     policies.append(p3)
 
+    # 5. Policy Four
     p4 = Policy('Policy Four', date(2015, 2, 1), 500)
     p4.billing_schedule = 'Two-Pay'
     p4.named_insured = ryan_bucket.id

@@ -8,6 +8,7 @@ from accounting import db
 from models import Contact, Invoice, Payment, Policy
 from utils import PolicyAccounting
 
+
 """
 #######################################################
 Test Suite for Accounting
@@ -29,6 +30,7 @@ class TestBillingSchedules(unittest.TestCase):
         cls.policy.named_insured = cls.test_insured.id
         cls.policy.agent = cls.test_agent.id
         db.session.commit()
+
 
     @classmethod
     def tearDownClass(cls):
