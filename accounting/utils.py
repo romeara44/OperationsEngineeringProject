@@ -31,7 +31,7 @@ class PolicyAccounting(object):
             date_cursor = datetime.now().date()
 
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
-                                .filter(Invoice.bill_date <= date_cursor)\
+                                .filter(Invoice.bill_date >= date_cursor)\
                                 .order_by(Invoice.bill_date)\
                                 .all()
         due_now = 0

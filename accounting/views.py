@@ -31,13 +31,16 @@ def main_page():
         .first()
 
     # Pass Policy ID to the filter mechnism
-    invoices = Invoice.query.filter_by(policy_id=policy.id)\
-        .order_by(Invoice.bill_date)\
-        .all()
+    if policy is not None:
+        invoices = Invoice.query.filter_by(policy_id=policy.id)\
+            .order_by(Invoice.bill_date)\
+            .all()
 
-    # pa = PolicyAccounting(policy.id)
-    pa = PolicyAccounting(2)
+        pa = PolicyAccounting(policy.id)
+        balance = pa.return_account_balance(effective_date)
 
-    balance = pa.return_account_balance(effective_date)
+    else:
+        invoices = []
+        balance = 0
 
     return render_template("invoices.html", invoices=invoices, balance=balance)
