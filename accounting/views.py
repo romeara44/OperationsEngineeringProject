@@ -29,7 +29,7 @@ def main_page():
     # Use Policy Number to get Policy Id
     policy = Policy.query.filter_by(policy_number=policy_number)\
         .first()
-    # print(policy.id)
+
     # Pass Policy ID to the filter mechnism
     if policy is not None:
         invoices = Invoice.query.filter_by(policy_id=policy.id)\
