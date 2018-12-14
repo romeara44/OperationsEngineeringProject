@@ -100,8 +100,7 @@ class TestReturnAccountBalance(unittest.TestCase):
     def test_quarterly_on_eff_date(self):
         self.policy.billing_schedule = "Quarterly"
         pa = PolicyAccounting(self.policy.id)
-        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 300)
-
+        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 300)  # 300
 
     def test_quarterly_on_last_installment_bill_date(self):
         self.policy.billing_schedule = "Quarterly"
@@ -123,13 +122,45 @@ class TestReturnAccountBalance(unittest.TestCase):
                                              date_cursor=invoices[1].bill_date, amount=600))
         self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
 
+
+
+class TestReturnAccountBalanceMonthly(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.test_agent = Contact('Test Agent', 'Agent')
+        cls.test_insured = Contact('Test Insured', 'Named Insured')
+        db.session.add(cls.test_agent)
+        db.session.add(cls.test_insured)
+        db.session.commit()
+
+        cls.policy = Policy('Test Policy', date(2015, 1, 1), 1200)
+        cls.policy.named_insured = cls.test_insured.id
+        cls.policy.agent = cls.test_agent.id
+        db.session.add(cls.policy)
+        db.session.commit()
+
+
+    @classmethod
+    def tearDownClass(cls):
+        db.session.delete(cls.test_insured)
+        db.session.delete(cls.test_agent)
+        db.session.delete(cls.policy)
+        db.session.commit()
+
+    def setUp(self):
+        self.payments = []
+
+    def tearDown(self):
+        for invoice in self.policy.invoices:
+            db.session.delete(invoice)
+        for payment in self.payments:
+            db.session.delete(payment)
+        db.session.commit()
+
     def test_monthly_on_eff_date(self):
         self.policy.billing_schedule = "Monthly"
         pa = PolicyAccounting(self.policy.id)
-
-        import logging
-        logging.info("self.policy.effective_date")
-        logging.info(self.policy.effective_date)
 
         self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 100)
 
@@ -138,10 +169,6 @@ class TestReturnAccountBalance(unittest.TestCase):
         pa = PolicyAccounting(self.policy.id)
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
                                 .order_by(Invoice.bill_date).all()
-        import logging
-        logging.info("Invoice.bill_date")
-        logging.info(pa.return_account_balance(date_cursor=invoices[11].bill_date))
-
         self.assertEquals(pa.return_account_balance(date_cursor=invoices[11].bill_date), 1200)
 
     def test_monthly_on_second_installment_bill_date_with_full_payment(self):
